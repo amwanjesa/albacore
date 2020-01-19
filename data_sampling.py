@@ -5,6 +5,7 @@ from os.path import isdir, join
 from shutil import copy
 
 import numpy as np
+
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 
@@ -58,6 +59,9 @@ def split_and_store_data(train_ids, test_ids, data_folder, output_train_folder, 
 
     train_image_ids, test_image_ids = get_image_ids(input_instances_file_path, train_ids, test_ids)
 
+    print("Number of training images: {}".format(len(train_image_ids)))
+    print("Number of testing images: {}".format(len(test_image_ids)))
+
     split_and_store_images(train_image_ids, test_image_ids, data_folder, output_train_folder, output_test_folder)
 
 def get_image_ids(instances_path, train_ids, test_ids):
@@ -65,12 +69,14 @@ def get_image_ids(instances_path, train_ids, test_ids):
     with open(instances_path, 'r', encoding="utf8") as instances_file:
         for line in instances_file:
             line_as_dict = loads(line)
-            image_id = line_as_dict["postMedia"]
-            if image_id:
+            image_ids = line_as_dict["postMedia"]
+            if image_ids:
                 if line_as_dict['id'] in train_ids:
-                    train_image_ids.append(image_id[0].split('/')[1])
+                    for image_id in image_ids:
+                        train_image_ids.append(image_id.split('/')[1])
                 elif line_as_dict['id'] in test_ids:
-                    test_image_ids.append(image_id[0].split('/')[1])
+                    for image_id in image_ids:
+                        test_image_ids.append(image_id.split('/')[1])
                 else:
                     continue
     return train_image_ids, test_image_ids
