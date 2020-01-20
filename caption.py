@@ -55,15 +55,24 @@ def caption_image(data_folder, output_folder):
                 for instance in instances:
                     instance = loads(instance)
                     photo_name = re.split("[_']", str(instance["postMedia"]))
-
+                    if len(filename.split("_")) == 3:
+                        file_compare = filename.split("_")[2]
+                    else:
+                        file_compare = filename.split("_")[1]
                     if len(photo_name) == 7:
-                        if photo_name[2] == filename.split("_")[1]:
-                            ids_dict[sentence] = instance["id"]
-                        if photo_name[5] == filename.split("_")[1]:
-                            ids_dict[sentence] = instance["id"]
+                        if photo_name[2] == file_compare:
+                            if ids_dict.get(instance["id"]) == None:
+                                ids_dict[instance["id"]] = [sentence]
+                            else:
+                                ids_dict[instance["id"]].append(sentence)
+                        if photo_name[5] == file_compare:
+                            if ids_dict.get(instance["id"]) == None:
+                                ids_dict[instance["id"]] = [sentence]
+                            else:
+                                ids_dict[instance["id"]].append(sentence)
                     elif len(photo_name) == 4:
-                        if photo_name[2] == filename.split("_")[1]:
-                            ids_dict[sentence] = instance["id"]
+                        if photo_name[2] == file_compare:
+                            ids_dict[instance["id"]] = sentence
                     else:
                         continue
 
