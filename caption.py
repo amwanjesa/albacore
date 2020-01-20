@@ -9,11 +9,13 @@ from im2txt import configuration
 from im2txt import inference_wrapper
 from im2txt.inference_utils import caption_generator
 from im2txt.inference_utils import vocabulary
+from tqdm import tqdm
 
 checkpoint_path = 'Pretrained-Show-and-Tell-model/model.ckpt-2000000'
 vocab_file = 'Pretrained-Show-and-Tell-model/word_counts.txt'
 
-def caption_image(id_folder, output_folder, data_folder):
+def caption_image(data_folder, output_folder):
+    id_folder = join(data_folder.split("m")[0], "instances.jsonl")
     images = []
     for file in os.listdir(data_folder):
         images.append(join(data_folder, file))
@@ -38,7 +40,7 @@ def caption_image(id_folder, output_folder, data_folder):
         # available beam search parameters.
         generator = caption_generator.CaptionGenerator(model, vocab)
 
-        for filename in images:
+        for filename in tqdm(images):
             with tf.gfile.GFile(filename, "rb") as f:
                 image = f.read()
             captions = generator.beam_search(sess, image)
@@ -48,24 +50,22 @@ def caption_image(id_folder, output_folder, data_folder):
             sentence = [vocab.id_to_word(w) for w in caption.sentence[1:-1]]
             sentence = " ".join(sentence)
 
-            for file in os.listdir(data_folder):
-                ids_dict = {}
-                with open(id_folder, 'r', encoding='utf8') as instances:
-                    for instance in instances:
-                        instance = loads(instance)
-                        photo = instance["postMedia"]
-                        photo_name = re.split("[_']", str(photo))
-                        #for i in image_name:
-                        if len(photo_name) == 7:
-                            if photo_name[2] == file:
-                                ids_dict[instance["id"]] = sentence
-                            elif photo_name[5] == file:
-                                ids_dict[instance["id"]] = sentence
-                        elif len(photo_name) == 4:
-                            if photo_name[2] == file:
-                                ids_dict[instance["id"]] = sentence
-                        else:
-                            continue
+            ids_dict = {}
+            with open(id_folder, 'r', encoding='utf8') as instances:
+                for instance in instances:
+                    instance = loads(instance)
+                    photo_name = re.split("[_']", str(instance["postMedia"]))
+
+                    if len(photo_name) == 7:
+                        if photo_name[2] == filename.split("_")[1]:
+                            ids_dict[instance["id"]] = sentence
+                        elif photo_name[5] == filename.split("_")[1]:
+                            ids_dict[instance["id"]] = sentence
+                    elif len(photo_name) == 4:
+                        if photo_name[2] == filename.split("_")[1]:
+                            ids_dict[instance["id"]] = sentence
+                    else:
+                        continue
 
     with open(output_folder, 'w', encoding="utf8") as output_file:
         output_file.write(str(ids_dict))
@@ -74,10 +74,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '--data-folder', help="Folder containing the images we want to caption")
-    parser.add_argument(
-        '--id-folder', help="Folder containing the ids of the images")
+ 
     parser.add_argument('--output-folder',
                         help="Folder containing the captions")
     args = parser.parse_args()
 
-    caption_image(args.id_folder, args.output_folder, args.data_folder)
+    caption_image(args.data_folder, args.output_folder)
