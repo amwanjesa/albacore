@@ -17,6 +17,7 @@ vocab_file = 'Pretrained-Show-and-Tell-model/word_counts.txt'
 def caption_image(data_folder, output_folder):
     id_folder = join(data_folder.split("m")[0], "instances.jsonl")
     images = []
+    ids_dict = {}
     for file in os.listdir(data_folder):
         images.append(join(data_folder, file))
 
@@ -50,7 +51,6 @@ def caption_image(data_folder, output_folder):
             sentence = [vocab.id_to_word(w) for w in caption.sentence[1:-1]]
             sentence = " ".join(sentence)
 
-            ids_dict = {}
             with open(id_folder, 'r', encoding='utf8') as instances:
                 for instance in instances:
                     instance = loads(instance)
@@ -58,12 +58,12 @@ def caption_image(data_folder, output_folder):
 
                     if len(photo_name) == 7:
                         if photo_name[2] == filename.split("_")[1]:
-                            ids_dict[instance["id"]] = sentence
-                        elif photo_name[5] == filename.split("_")[1]:
-                            ids_dict[instance["id"]] = sentence
+                            ids_dict[sentence] = instance["id"]
+                        if photo_name[5] == filename.split("_")[1]:
+                            ids_dict[sentence] = instance["id"]
                     elif len(photo_name) == 4:
                         if photo_name[2] == filename.split("_")[1]:
-                            ids_dict[instance["id"]] = sentence
+                            ids_dict[sentence] = instance["id"]
                     else:
                         continue
 
