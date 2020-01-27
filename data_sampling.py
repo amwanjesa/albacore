@@ -44,28 +44,29 @@ def split_and_store_data(train_ids, test_ids, data_folder, output_train_folder, 
     output_test_instances_file_path = join(
         output_test_folder, 'instances.jsonl')
 
-    output_train_truths_file_path = join(output_train_folder, 'truth.jsonl')
-    output_test_truths_file_path = join(output_test_folder, 'truth.jsonl')
-
-    store_sampled_data(train_ids, input_instances_file_path,
-                       output_train_instances_file_path)
-    store_sampled_data(train_ids, input_truths_file_path,
-                       output_train_truths_file_path)
-
-    store_sampled_data(test_ids, input_instances_file_path,
-                       output_test_instances_file_path)
-    store_sampled_data(test_ids, input_truths_file_path,
-                       output_test_truths_file_path)
-
-    train_image_ids, test_image_ids = get_image_ids(input_instances_file_path, train_ids, test_ids)
+    train_image_ids, test_image_ids, ignore_ids = get_image_ids(input_instances_file_path, train_ids, test_ids)
 
     print("Number of training images: {}".format(len(train_image_ids)))
     print("Number of testing images: {}".format(len(test_image_ids)))
 
     split_and_store_images(train_image_ids, test_image_ids, data_folder, output_train_folder, output_test_folder)
 
+    output_train_truths_file_path = join(output_train_folder, 'truth.jsonl')
+    output_test_truths_file_path = join(output_test_folder, 'truth.jsonl')
+
+    store_sampled_data(train_ids, input_instances_file_path,
+                       output_train_instances_file_path, ignore_ids=ignore_ids)
+    store_sampled_data(train_ids, input_truths_file_path,
+                       output_train_truths_file_path, ignore_ids=ignore_ids)
+
+    store_sampled_data(test_ids, input_instances_file_path,
+                       output_test_instances_file_path, ignore_ids=ignore_ids)
+    store_sampled_data(test_ids, input_truths_file_path,
+                       output_test_truths_file_path, ignore_ids=ignore_ids)
+
 def get_image_ids(instances_path, train_ids, test_ids):
     train_image_ids, test_image_ids = [], []
+    ignore_ids = []
     with open(instances_path, 'r', encoding="utf8") as instances_file:
         for line in instances_file:
             line_as_dict = loads(line)
@@ -79,7 +80,9 @@ def get_image_ids(instances_path, train_ids, test_ids):
                         test_image_ids.append(image_id.split('/')[1])
                 else:
                     continue
-    return train_image_ids, test_image_ids
+            else:
+                ignore_ids.append(line_as_dict['id'])
+    return train_image_ids, test_image_ids, ignore_ids
 
 def split_and_store_images(train_ids, test_ids, data_folder, output_train_folder, output_test_folder):
     input_images_folder = join(data_folder, 'media')
@@ -98,11 +101,11 @@ def split_and_store_images(train_ids, test_ids, data_folder, output_train_folder
                          output_test_images_folder)
 
 
-def store_sampled_data(ids, input_path, output_path):
+def store_sampled_data(ids, input_path, output_path, ignore_ids=[]):
     with open(input_path, 'r', encoding="utf8") as input_file, open(output_path, 'w', encoding="utf8") as output_file:
         for line in input_file:
             line_as_dict = loads(line)
-            if line_as_dict['id'] in ids:
+            if line_as_dict['id'] in ids and not line_as_dict['id'] in ignore_ids:
                 output_file.write(line)
 
 
